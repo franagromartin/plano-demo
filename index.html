@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Patrimonio · plano de propiedades</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--papel:#f7f4f3;--sup:#fff;--sup2:#fbf8f7;--tinta:#1c1917;--sub:#6b6360;--tenue:#9a908c;
+ --linea:#e7e0de;--linea2:#d6ccc9;--corp:#cf0e36;--corp-osc:#a30b2b;--ok:#2f7d5c;--aviso:#c07a00;
+ --aviso-bg:#fbf0d9;--agua:#2e7d9a;--arandano:#8d63ad;--casa:#b5542c;--sombra:0 1px 2px rgba(28,25,23,.08),0 10px 30px -14px rgba(28,25,23,.45)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--papel);color:var(--tinta);font:15px/1.45 'Source Sans 3','Segoe UI',system-ui,sans-serif}
+.num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font:600 10px 'Archivo',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--tenue)}
+#app{display:grid;grid-template-rows:56px 1fr;height:100%}
+header{display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--sup);border-bottom:1px solid var(--linea);z-index:1001}
+.marca{display:flex;align-items:center;gap:10px}
+.marca .s{width:32px;height:32px;border-radius:9px;background:var(--corp);color:#fff;display:grid;place-items:center;font:700 13px 'Archivo',sans-serif}
+.marca b{font:700 15px 'Archivo',sans-serif;display:block;line-height:1.1}
+.marca span{font-size:11.5px;color:var(--tenue)}
+.busca{flex:1;max-width:380px;margin-left:auto;position:relative}
+.busca input{width:100%;font:inherit;font-size:14px;padding:8px 12px 8px 32px;border:1px solid var(--linea);border-radius:9px;background:var(--sup2)}
+.busca input:focus{outline:none;border-color:var(--corp);background:#fff}
+.busca .l{position:absolute;left:11px;top:8px;color:var(--tenue)}
+.sug{position:absolute;top:42px;left:0;right:0;background:#fff;border:1px solid var(--linea2);border-radius:10px;box-shadow:var(--sombra);overflow:hidden}
+.sug button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 12px;font:inherit;font-size:13.5px;cursor:pointer;border-bottom:1px solid var(--linea)}
+.sug button:hover{background:var(--sup2)}
+.sug small{display:block;color:var(--tenue);font-size:12px}
+.quien{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
+.quien .av{width:30px;height:30px;border-radius:50%;background:var(--tinta);color:#fff;display:grid;place-items:center;font:600 11px 'IBM Plex Mono',monospace}
+.maqueta{font:700 10px 'Archivo',sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:5px;background:var(--aviso-bg);color:var(--aviso)}
+@media(max-width:760px){.quien span,.marca span{display:none}.busca{max-width:none}}
+main{position:relative}
+#mapa{position:absolute;inset:0;background:#e9e4df}
+/* panel lateral */
+.panel{position:absolute;left:14px;top:14px;width:290px;max-height:calc(100% - 28px);overflow:auto;z-index:1000;
+ background:var(--sup);border:1px solid var(--linea);border-radius:14px;box-shadow:var(--sombra);padding:14px}
+.panel h2{font:700 16px 'Archivo',sans-serif;margin:2px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid var(--linea2);background:#fff;border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer;color:var(--sub)}
+.chip.on{background:var(--tinta);color:#fff;border-color:var(--tinta)}
+.prop{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1px solid var(--linea);background:var(--sup2);
+ border-radius:11px;padding:10px;margin-bottom:8px;cursor:pointer;font:inherit}
+.prop:hover{border-color:var(--linea2);background:#fff}
+.prop .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto;color:#fff}
+.prop b{display:block;font-size:14px}
+.prop small{display:block;color:var(--sub);font-size:12px;line-height:1.35}
+.panel .pie{font-size:11.5px;color:var(--tenue);margin-top:6px;line-height:1.4}
+@media(max-width:760px){.panel{width:auto;right:14px;max-height:38%}}
+/* controles de capa */
+.capas{position:absolute;right:14px;top:14px;z-index:1000;background:var(--sup);border:1px solid var(--linea);border-radius:12px;box-shadow:var(--sombra);padding:6px;display:flex;gap:4px}
+.capas button{border:0;background:none;padding:6px 11px;border-radius:8px;font:600 12.5px 'Archivo',sans-serif;color:var(--sub);cursor:pointer}
+.capas button.on{background:var(--tinta);color:#fff}
+.inicio{position:absolute;right:14px;top:62px;z-index:1000}
+.bt{border:1px solid var(--linea2);background:#fff;border-radius:9px;padding:7px 12px;font:600 12.5px 'Archivo',sans-serif;cursor:pointer;box-shadow:var(--sombra)}
+.bt:hover{border-color:var(--tinta)}
+.pista{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:1000;background:rgba(28,25,23,.86);color:#fff;
+ padding:8px 14px;border-radius:999px;font-size:13px;pointer-events:none;transition:opacity .4s;white-space:nowrap}
+@media(max-width:760px){.pista{white-space:normal;width:calc(100% - 32px);text-align:center;bottom:12px}}
+.sinred{position:absolute;left:14px;right:14px;bottom:44px;display:none;justify-content:center;z-index:999;pointer-events:none}
+.sinred div{background:#fff;border:1px dashed var(--linea2);border-radius:12px;padding:14px 18px;max-width:420px;font-size:13.5px;color:var(--sub);box-shadow:var(--sombra)}
+/* marcadores */
+.mk{width:38px;height:46px;position:relative;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.mk svg{width:38px;height:46px}
+.etq{background:rgba(255,255,255,.95);border:0;border-radius:6px;padding:2px 7px;font:700 12px 'Archivo',sans-serif;color:var(--tinta);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.etq:before{display:none}
+/* globo de la propiedad */
+.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--sombra);padding:0}
+.leaflet-popup-content{margin:0;width:300px!important}
+.pp{padding:14px 14px 10px}
+.pp h3{font:700 16px 'Archivo',sans-serif;margin:2px 0 2px}
+.pp .tit{font-size:12.5px;color:var(--sub);margin-bottom:10px}
+.pp .tit b{color:var(--tinta)}
+.doc{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--linea);background:var(--sup2);border-radius:10px;padding:9px 10px;margin-bottom:6px;cursor:pointer;font:inherit;text-align:left}
+.doc:hover{background:#fff;border-color:var(--corp)}
+.doc .di{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex:0 0 auto;background:#fff;border:1px solid var(--linea)}
+.doc b{display:block;font-size:13.5px}
+.doc small{display:block;font-size:11.5px;color:var(--tenue)}
+.doc .flecha{margin-left:auto;color:var(--tenue)}
+.pp .ref{font-size:11.5px;color:var(--tenue);margin-top:8px}
+/* visor de documento */
+.velo{position:fixed;inset:0;background:rgba(20,17,16,.6);z-index:2000;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 14px}
+.velo.on{display:flex}
+.visor{width:min(820px,100%);background:var(--papel);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden}
+.visor-barra{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sup);border-bottom:1px solid var(--linea)}
+.visor-barra b{font:700 14px 'Archivo',sans-serif}
+.visor-barra span{font-size:12px;color:var(--tenue)}
+.visor-barra .x{margin-left:auto}
+.hoja-caja{padding:20px;overflow-x:auto}
+.registro{padding:9px 14px;font-size:12px;color:var(--sub);background:var(--sup);border-top:1px solid var(--linea)}
+.registro b{color:var(--tinta)}
+/* el papel */
+.hoja{position:relative;background:#fff;color:#222;max-width:760px;margin:0 auto;padding:30px 34px 34px;box-shadow:0 2px 10px rgba(0,0,0,.12);font-family:Arial,Helvetica,sans-serif;font-size:12.5px;min-width:560px}
+.hoja .agua-marca{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;overflow:hidden}
+.hoja .agua-marca span{transform:rotate(-28deg);font:700 92px Arial,sans-serif;color:rgba(207,14,54,.09);letter-spacing:.08em}
+.hoja table{border-collapse:collapse;width:100%}
+.hoja h4{margin:18px 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#1f5f78;border-bottom:2px solid #1f5f78;padding-bottom:3px}
+.r-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:3px solid #1f5f78;padding-bottom:12px}
+.r-logo{display:flex;align-items:center;gap:10px}
+.r-logo .gota{width:42px;height:42px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#3aa0c4,#1f5f78)}
+.r-logo b{display:block;font-size:17px;color:#1f5f78}
+.r-logo small{font-size:10.5px;color:#777}
+.r-fact{text-align:right;font-size:11.5px;color:#444}
+.r-fact b{font-size:15px;color:#222;display:block}
+.r-datos{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.r-caja{border:1px solid #d7e3e8;border-radius:6px;padding:9px 11px;background:#f6fafb}
+.r-caja dt{font-size:10px;color:#6c8791;text-transform:uppercase;letter-spacing:.05em}
+.r-caja dd{margin:0 0 6px;font-weight:700}
+.r-tabla td,.r-tabla th{padding:5px 6px;border-bottom:1px solid #e6eef1;text-align:left}
+.r-tabla th{font-size:10.5px;color:#6c8791;text-transform:uppercase;font-weight:600}
+.r-tabla td.d,.r-tabla th.d{text-align:right;font-variant-numeric:tabular-nums}
+.r-tabla tr.sub td{background:#f6fafb;font-weight:700}
+.r-total{display:flex;justify-content:space-between;align-items:center;margin-top:14px;background:#1f5f78;color:#fff;border-radius:6px;padding:12px 16px}
+.r-total b{font-size:22px}
+.r-graf{display:flex;align-items:flex-end;gap:8px;height:90px;padding:6px 4px 0;border-bottom:1px solid #ccc}
+.r-graf div{flex:1;background:#9cc9d8;position:relative;border-radius:2px 2px 0 0}
+.r-graf div.act{background:#1f5f78}
+.r-graf div span{position:absolute;top:-15px;left:0;right:0;text-align:center;font-size:9.5px;color:#555}
+.r-graf-et{display:flex;gap:8px;padding:3px 4px 0}
+.r-graf-et span{flex:1;text-align:center;font-size:9.5px;color:#777}
+.r-pie{margin-top:16px;font-size:10px;color:#888;line-height:1.4;border-top:1px solid #eee;padding-top:8px}
+.aviso-ej{background:#fff4d6;border:1px solid #e9c46a;color:#6b5200;font-size:11.5px;padding:6px 10px;border-radius:5px;margin-bottom:14px}
+/* escritura */
+.esc{font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.75;text-align:justify}
+.esc .cab{text-align:center;margin-bottom:18px}
+.esc .cab b{display:block;font-size:20px;letter-spacing:.06em}
+.esc .sello{width:86px;height:86px;border:3px double #7a2a2a;border-radius:50%;display:grid;place-items:center;color:#7a2a2a;font:700 10px Georgia,serif;text-align:center;margin:18px 0 0 auto;transform:rotate(-12deg)}
+</style></head>
+<body><div id="app">
+<header>
+ <div class="marca"><span class="s">AM</span><span><b>Patrimonio</b><span>Grupo Agromolinillo · vista del dueño</span></span></div>
+ <div class="busca"><span class="l">⌕</span><input id="q" placeholder="Buscar propiedad, titular o documento…" autocomplete="off"><div class="sug" id="sug" hidden></div></div>
+ <span class="maqueta" title="Simulación: datos y documentos de ejemplo">Simulación</span>
+ <div class="quien"><span class="av">DU</span><span>El dueño<br><small style="color:var(--tenue)">acceso por designación</small></span></div>
+</header>
+<main>
+ <div id="mapa"></div>
+ <aside class="panel" id="panel">
+  <span class="eyebrow">Término municipal de Moguer</span>
+  <h2>Propiedades</h2>
+  <div class="chips" id="chips"></div>
+  <div id="lista"></div>
+  <p class="pie">Pulsa una propiedad para ir a ella, o acércate en el plano y pincha encima.</p>
+ </aside>
+ <div class="capas" id="capas">
+  <button data-b="orto" class="on">Ortofoto</button><button data-b="mapa">Mapa</button><button data-b="cat">Catastro</button>
+ </div>
+ <div class="inicio"><button class="bt" id="bt-inicio">⌂ Todo Moguer</button></div>
+ <div class="pista" id="pista">Acerca el plano a una propiedad y pincha en ella para ver su documentación</div>
+ <div class="sinred" id="sinred"><div><b>No se ha podido cargar la ortofoto.</b><br>El plano necesita conexión a internet para pedir las imágenes al IGN. Las propiedades y los documentos funcionan igual.</div></div>
+</main>
+</div>
+
+<div class="velo" id="velo"><div class="visor">
+ <div class="visor-barra"><span id="v-ic" style="font-size:18px"></span><div><b id="v-tit"></b><br><span id="v-sub"></span></div>
+  <button class="bt x" id="v-cerrar">Cerrar ✕</button></div>
+ <div class="hoja-caja" id="v-hoja"></div>
+ <div class="registro" id="v-reg"></div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const ALM = {"calles":[{"n":"1","ha":1.6801,"var":"Emerald","traza":"1105201-01","g":[[[37.2805374,-6.7885348],[37.2805945,-6.7878813],[37.2805821,-6.7878422],[37.280602,-6.7877976],[37.2806687,-6.7870265],[37.2797796,-6.7869048],[37.2797603,-6.7870294],[37.2797056,-6.7870445],[37.2796879,-6.7872052],[37.279664,-6.7872296],[37.2796289,-6.7872317],[37.2796143,-6.7873686],[37.2795905,-6.787393],[37.2795553,-6.7873918],[37.2795363,-6.7875333],[37.2795087,-6.7875522],[37.2794816,-6.7875496],[37.2794735,-6.7876919],[37.2794488,-6.7877186],[37.2794073,-6.7877164],[37.2793903,-6.7878726],[37.2793665,-6.7878969],[37.2793313,-6.7878957],[37.2793148,-6.7880755],[37.2792947,-6.7881054],[37.2792524,-6.7881089],[37.2792309,-6.7883577],[37.2805356,-6.7885349]]]},{"n":"2","ha":2.2071,"var":"Emerald","traza":"1105202-02","g":[[[37.2804113,-6.7899889],[37.2804685,-6.7893342],[37.2804577,-6.7892861],[37.2804751,-6.789254],[37.2805314,-6.7886027],[37.279168,-6.788417],[37.2791385,-6.7887179],[37.2791192,-6.7887478],[37.2790761,-6.7887536],[37.2790429,-6.789103],[37.2790145,-6.789123],[37.2789251,-6.7891121],[37.2788977,-6.7891445],[37.2788626,-6.7891433],[37.2788456,-6.789199],[37.2787971,-6.7892072],[37.2787801,-6.789263],[37.2787316,-6.7892711],[37.2787199,-6.7893222],[37.2787004,-6.7893386],[37.2786652,-6.7893374],[37.278642,-6.7893956],[37.2785997,-6.7893991],[37.2785888,-6.7894468],[37.2785613,-6.7894656],[37.2785342,-6.789463],[37.2785172,-6.7895176],[37.2784687,-6.789527],[37.2784462,-6.7895795],[37.2784039,-6.7895819],[37.2783928,-6.789713],[37.2804095,-6.789989]]]},{"n":"3","ha":3.3228,"var":"Emerald","traza":"1105203-03","g":[[[37.2802853,-6.7914464],[37.2803424,-6.7907849],[37.2803316,-6.7907367],[37.2803498,-6.7907024],[37.2804054,-6.7900568],[37.278329,-6.7897679],[37.278267,-6.7897787],[37.2782478,-6.7898594],[37.2781984,-6.7898676],[37.2781854,-6.7899458],[37.2781307,-6.7899609],[37.2781154,-6.7900595],[37.2780878,-6.7900783],[37.2780608,-6.7900757],[37.2780521,-6.7901403],[37.2780353,-6.7901611],[37.277993,-6.7901645],[37.2779699,-6.7904246],[37.2779461,-6.7904512],[37.2779083,-6.7904512],[37.2778995,-6.7905124],[37.2778828,-6.7905332],[37.2778405,-6.7905367],[37.2778195,-6.7907673],[37.2777994,-6.7907973],[37.2777571,-6.7908008],[37.2777311,-6.7910981],[37.2802835,-6.7914464]]]},{"n":"4","ha":4.4138,"var":"Emerald","traza":"1105204-04","g":[[[37.2804563,-6.7929312],[37.2804811,-6.7926621],[37.2805012,-6.7926322],[37.2805426,-6.7926287],[37.2805661,-6.7924397],[37.2806217,-6.7924211],[37.280632,-6.7922505],[37.2806558,-6.7922228],[37.2806982,-6.7922249],[37.2807084,-6.7921412],[37.2807331,-6.7921168],[37.2807674,-6.792118],[37.2807812,-6.7920375],[37.2808359,-6.7920224],[37.2808551,-6.7919418],[37.2809036,-6.7919336],[37.2809131,-6.7918622],[37.280937,-6.7918379],[37.2809722,-6.791838],[37.2809914,-6.7917573],[37.2810399,-6.7917491],[37.2810518,-6.7916146],[37.2803416,-6.7915147],[37.2803013,-6.7915305],[37.2802794,-6.7915142],[37.2776689,-6.791145],[37.277648,-6.7913306],[37.2776241,-6.791355],[37.277589,-6.7913549],[37.2775684,-6.7915574],[37.2775445,-6.7915818],[37.2775094,-6.7915805],[37.2774923,-6.7917739],[37.277503,-6.7918198],[37.2774856,-6.7918508],[37.2774632,-6.7921029],[37.2774431,-6.7921328],[37.2774008,-6.7921363],[37.277381,-6.7922824],[37.2773543,-6.7923012],[37.2773272,-6.7922986],[37.2773094,-6.792501],[37.2801582,-6.7928903],[37.2801868,-6.7928771],[37.2802196,-6.7928987],[37.2804545,-6.7929313]]]},{"n":"5","ha":4.0281,"var":"Emerald","traza":"1105205-05","g":[[[37.2799876,-6.7941822],[37.280006,-6.7941049],[37.2800554,-6.7940967],[37.280091,-6.7936851],[37.2800829,-6.7936403],[37.2800977,-6.7936105],[37.280154,-6.7929581],[37.2772438,-6.7925604],[37.2772255,-6.7927414],[37.2772007,-6.7927658],[37.2771656,-6.7927668],[37.2771321,-6.7932415],[37.2771048,-6.7932773],[37.2770616,-6.7932763],[37.2770446,-6.7934324],[37.2770208,-6.7934568],[37.2769856,-6.7934578],[37.2769278,-6.7941283],[37.2772279,-6.7941251],[37.2772573,-6.7941062],[37.2773494,-6.7941159],[37.2773743,-6.7941006],[37.27747,-6.794109],[37.2774904,-6.7940904],[37.2775915,-6.7940987],[37.27762,-6.794081],[37.2777699,-6.794098],[37.2778002,-6.7940802],[37.2778923,-6.7940899],[37.2779181,-6.7940723],[37.2780726,-6.7940903],[37.2782249,-6.7940408],[37.2783143,-6.7940506],[37.2783437,-6.794035],[37.2784979,-6.7940396],[37.2785379,-6.7940113],[37.2799858,-6.7941822]]]},{"n":"6","ha":2.4805,"var":"Windsor + JM","traza":"1105206-06","g":[[[37.2838966,-6.7874011],[37.2839486,-6.7868052],[37.2839361,-6.7867661],[37.2839552,-6.7867249],[37.2840153,-6.786034],[37.2839808,-6.7860238],[37.2839593,-6.7859804],[37.2839258,-6.7859746],[37.2838427,-6.7859161],[37.2836665,-6.785892],[37.283647,-6.7859072],[37.2836055,-6.7859039],[37.2835962,-6.785938],[37.2835758,-6.7859544],[37.2834819,-6.7859448],[37.2834754,-6.7859833],[37.2834515,-6.7860077],[37.2833576,-6.7859992],[37.2833357,-6.7860303],[37.2832943,-6.7860326],[37.2832654,-6.7860786],[37.2831706,-6.7860701],[37.2831512,-6.7860943],[37.283108,-6.7860967],[37.2830778,-6.7861213],[37.2829875,-6.7861093],[37.2829581,-6.7861293],[37.2825344,-6.7860729],[37.2824533,-6.7860245],[37.282361,-6.7860058],[37.2823371,-6.7859794],[37.2822463,-6.785946],[37.2822197,-6.7859209],[37.2821284,-6.7859066],[37.2821054,-6.7858802],[37.2820674,-6.7858746],[37.2820473,-6.7858549],[37.2819885,-6.7858464],[37.281935,-6.7864548],[37.2819731,-6.7864672],[37.2819937,-6.7865106],[37.2819369,-6.7871314],[37.2838948,-6.7874]]]},{"n":"7","ha":4.7497,"var":"Windsor + JM","traza":"1105207-07","g":[[[37.2837549,-6.7889764],[37.2838128,-6.7883138],[37.2838047,-6.7882689],[37.2838195,-6.788238],[37.2838868,-6.7874544],[37.280741,-6.7870368],[37.2806708,-6.787817],[37.2806779,-6.7878597],[37.2806641,-6.7878905],[37.2806079,-6.7885452],[37.2837531,-6.7889764]]]},{"n":"8","ha":4.3442,"var":"Windsor + JM","traza":"1105208-08","g":[[[37.2836188,-6.7904241],[37.2836752,-6.7897761],[37.2836671,-6.7897313],[37.2836819,-6.7897004],[37.2837389,-6.7890389],[37.2805929,-6.788611],[37.2805347,-6.7892601],[37.2805455,-6.7893083],[37.2805272,-6.7893427],[37.2804709,-6.7899962],[37.283617,-6.7904241]]]},{"n":"9","ha":3.2408,"var":"Windsor + JM","traza":"1105209-09","g":[[[37.2811166,-6.7915597],[37.2811342,-6.7914926],[37.2811828,-6.7914844],[37.2811926,-6.7913826],[37.2812065,-6.7913585],[37.281255,-6.7913492],[37.281272,-6.7912935],[37.2813205,-6.7912853],[37.2813314,-6.7912398],[37.2813509,-6.7912235],[37.2813861,-6.7912247],[37.2814078,-6.7911824],[37.2815111,-6.7911613],[37.2815289,-6.7909104],[37.2815643,-6.7908721],[37.2821624,-6.7909539],[37.2821913,-6.7910049],[37.2821711,-6.7911815],[37.2822129,-6.7911972],[37.2822263,-6.7912396],[37.2822681,-6.7912553],[37.2822814,-6.7912944],[37.2823167,-6.7913013],[37.2823988,-6.7913541],[37.2824901,-6.7913695],[37.2825148,-6.7913925],[37.2828672,-6.7914408],[37.2828994,-6.7914252],[37.2829873,-6.7914508],[37.2834664,-6.7914842],[37.2834865,-6.7914475],[37.2835305,-6.7914417],[37.2835499,-6.7912235],[37.28354,-6.7911764],[37.2835565,-6.7911421],[37.283612,-6.7904953],[37.2804668,-6.790064],[37.2804086,-6.7907131],[37.2804194,-6.7907579],[37.280402,-6.7907922],[37.2803457,-6.7914469],[37.2811148,-6.7915597]]]}],"alberca":[[[37.2806942,-6.7865588],[37.2805165,-6.785973],[37.280502,-6.7859204],[37.280495,-6.7858868],[37.2804937,-6.785862],[37.2804942,-6.7858406],[37.2805056,-6.7858222],[37.2805902,-6.7857227],[37.2806859,-6.7856376],[37.2807668,-6.7855777],[37.2808282,-6.7855342],[37.2808979,-6.7855028],[37.2809864,-6.7854653],[37.2810393,-6.7854502],[37.2811248,-6.7854432],[37.281187,-6.7854413],[37.2812908,-6.7854507],[37.2813913,-6.7854793],[37.2814986,-6.7855258],[37.2816324,-6.7855997],[37.2817281,-6.7856556],[37.2817818,-6.7856844],[37.2817974,-6.7856964],[37.2818131,-6.7857185],[37.2818244,-6.7857452],[37.2818311,-6.7857676],[37.2818342,-6.7857889],[37.2818172,-6.7867571],[37.2818097,-6.78679],[37.2817939,-6.7868108],[37.2817726,-6.7868306],[37.2817502,-6.786838],[37.2817278,-6.7868432],[37.2813739,-6.7868581],[37.2810649,-6.7868626],[37.2809442,-6.7868661],[37.2808955,-6.7868676],[37.2808612,-6.7868641],[37.2808286,-6.786856],[37.2808068,-6.7868487],[37.2807903,-6.7868289],[37.2807737,-6.7868091]]],"construcciones":[{"nombre":"Viviendas","g":[[[37.2801595,-6.7864989],[37.2800671,-6.7863764],[37.2803907,-6.7859914],[37.2804831,-6.7861139]]]},{"nombre":"Nave","g":[[[37.2803009,-6.7866842],[37.2801937,-6.7865408],[37.2804088,-6.7862852],[37.280516,-6.7864276]]]}],"vias":[{"nombre":"Perimetro","g":[[[37.2774463,-6.7913895],[37.2777483,-6.7904785],[37.2778385,-6.7902401],[37.277933,-6.79004],[37.2780773,-6.7898023],[37.2782832,-6.7895358],[37.2784758,-6.7893271],[37.2787477,-6.7890756],[37.2788439,-6.7889634],[37.2789294,-6.788812],[37.2790028,-6.7885933],[37.2791443,-6.788067],[37.2792964,-6.7876678],[37.2795555,-6.7870647],[37.2796712,-6.7867489],[37.2797696,-6.7865633],[37.2799347,-6.7863341],[37.2802696,-6.7859261],[37.2805884,-6.7855762],[37.2806937,-6.7854761],[37.2807988,-6.7854099],[37.2810794,-6.7853261],[37.2811962,-6.7853114],[37.2812965,-6.7853253],[37.2814061,-6.7853515],[37.2819791,-6.7856324],[37.2825623,-6.7858781],[37.2827437,-6.7859393],[37.2828576,-6.7859619],[37.2830457,-6.7859474],[37.283191,-6.785907],[37.2834962,-6.7857977],[37.2835949,-6.7857711],[37.2837153,-6.7857518],[37.2838046,-6.7857571],[37.2838961,-6.7857815],[37.2839933,-6.785826],[37.284209,-6.7859844]]]},{"nombre":"Camino central","g":[[[37.2801046,-6.7942216],[37.2801801,-6.7938731],[37.2802185,-6.7938044],[37.280224,-6.7937151],[37.28021,-6.7934448],[37.2801798,-6.7933758],[37.2801819,-6.7931964],[37.2802069,-6.793137],[37.2802098,-6.7930478],[37.2801984,-6.7927786],[37.280204,-6.7926882],[37.2806893,-6.7872131],[37.2807014,-6.7869432],[37.2806738,-6.7868684],[37.2806614,-6.7867797],[37.280631,-6.7866971],[37.2805723,-6.7866458],[37.2805458,-6.7865744],[37.2805649,-6.7864915],[37.2806015,-6.7864205],[37.2805989,-6.7863315],[37.2805667,-6.7862501],[37.2803314,-6.7859085]]]},{"nombre":"Carretera La Canorra","g":[[[37.2767727,-6.7942659],[37.2767769,-6.7941056],[37.2767939,-6.7939021],[37.2768737,-6.7934983],[37.2769719,-6.7930601],[37.2770501,-6.7927601],[37.2772573,-6.7921743],[37.2773397,-6.791908],[37.2773966,-6.7916707],[37.27744,-6.7914382],[37.2775112,-6.7907155],[37.2775599,-6.7903746],[37.2776547,-6.7898575],[37.2776775,-6.7896279],[37.2776841,-6.789401],[37.2776777,-6.789108],[37.277644,-6.7888473],[37.2775853,-6.7885513],[37.2775058,-6.7882029],[37.2772745,-6.7868259],[37.2772159,-6.7865355],[37.2770265,-6.7857099],[37.2770011,-6.785264],[37.276976,-6.7850787],[37.2769242,-6.7848626],[37.2767916,-6.7845202]]]}]};
+
+/* ══ utilidades ══════════════════════════════════════ */
+const eur = v => v.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:'always'}) + ' €';
+const nf = (v,d=0) => v.toLocaleString('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d,useGrouping:'always'});
+const ahora = () => new Date().toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function centro(rings){ let a=0,b=0,n=0; rings.forEach(r=>r.forEach(p=>{a+=p[0];b+=p[1];n++})); return [a/n,b/n]; }
+const almCentro = centro(ALM.calles.flatMap(c=>c.g));
+
+/* ══ las propiedades (todas de ejemplo) ══════════════ */
+const PROPS = [
+ {id:'alm', tipo:'finca', nombre:'Finca Almohafa', titular:'Agromolinillo S.C.A.', grupo:'Agromolinillo S.C.A.',
+  donde:'Paraje de La Canorra · Moguer', pos:almCentro, col:'var(--arandano)', hex:'#8d63ad',
+  detalle:'39,5 ha de arándano en 11 calles · alberca de 58.000 m³',
+  docs:[
+   {k:'esc', ic:'📜', t:'Escrituras', s:'Compraventa · 2011'},
+   {k:'ibi', ic:'🏛', t:'Contribución', s:'IBI rústica · ejercicio 2026'},
+   {k:'agua',ic:'💧', t:'Agua', s:'Cuota de riego · 3.er trimestre 2026'},
+   {k:'luz', ic:'⚡', t:'Luz', s:'Cabezal de riego · septiembre 2026'}]},
+ {id:'va', tipo:'vivienda', nombre:'Vivienda del casco urbano', titular:'PRUEBA · Titular A', grupo:'PRUEBA · Titular A',
+  donde:'Casco urbano de Moguer · ubicación ilustrativa', pos:[37.27560,-6.83950], col:'var(--casa)', hex:'#b5542c',
+  detalle:'Vivienda unifamiliar · 186 m² construidos',
+  docs:[
+   {k:'esc', ic:'📜', t:'Escrituras', s:'Herencia y adjudicación · 2004'},
+   {k:'ibi', ic:'🏛', t:'Contribución', s:'IBI urbana · ejercicio 2026'},
+   {k:'agua',ic:'💧', t:'Agua', s:'3.er trimestre 2026 · domiciliado'},
+   {k:'luz', ic:'⚡', t:'Luz', s:'Septiembre 2026'}]},
+ {id:'vb', tipo:'vivienda', nombre:'Casa de la calle de abajo', titular:'PRUEBA · Sociedad patrimonial B', grupo:'PRUEBA · Sociedad B',
+  donde:'Casco urbano de Moguer · ubicación ilustrativa', pos:[37.27330,-6.83620], col:'var(--casa)', hex:'#b5542c',
+  detalle:'Vivienda entre medianeras · 142 m² construidos · alquilada',
+  docs:[
+   {k:'esc', ic:'📜', t:'Escrituras', s:'Compraventa · 2017'},
+   {k:'ibi', ic:'🏛', t:'Contribución', s:'IBI urbana · ejercicio 2026'},
+   {k:'agua',ic:'💧', t:'Agua', s:'3.er trimestre 2026 · domiciliado'},
+   {k:'luz', ic:'⚡', t:'Luz', s:'Septiembre 2026'}]},
+];
+
+/* ══ el mapa ═════════════════════════════════════════ */
+const INICIO = {c:[37.262,-6.815], z:12};
+const map = L.map('mapa',{zoomControl:false, attributionControl:true}).setView(INICIO.c, INICIO.z);
+L.control.zoom({position:'bottomright'}).addTo(map);
+const wmts = capa => `https://www.ign.es/wmts/${capa}?request=GetTile&service=WMTS&VERSION=1.0.0&Style=default&TileMatrixSet=GoogleMapsCompatible&TileMatrix={z}&TileRow={y}&TileCol={x}`;
+const orto = L.tileLayer(wmts('pnoa-ma') + '&Layer=OI.OrthoimageCoverage&Format=image/jpeg',
+  {maxZoom:20, maxNativeZoom:19, attribution:'Ortofoto PNOA © IGN · scne.es'});
+const base = L.tileLayer(wmts('ign-base') + '&Layer=IGNBaseTodo&Format=image/png',
+  {maxZoom:20, maxNativeZoom:17, attribution:'Mapa base © IGN · scne.es'});
+const limites = L.tileLayer.wms('https://www.ign.es/wms-inspire/unidades-administrativas',
+  {layers:'AU.AdministrativeBoundary', format:'image/png', transparent:true, opacity:.9, attribution:'Límites © IGN'});
+orto.addTo(map); limites.addTo(map);
+
+/* si no llega ni una tesela, se dice */
+let tOk = 0, tMal = 0;
+[orto, base].forEach(l => { l.on('tileload',()=>{tOk++; document.getElementById('sinred').style.display='none';});
+  l.on('tileerror',()=>{tMal++; if(tMal>8 && tOk===0) document.getElementById('sinred').style.display='flex';}); });
+
+/* Catastro: una sola imagen por vista (sus condiciones prohíben pedirlo en teselas) */
+let catOn = false, catImg = null, catT = null;
+function pedirCatastro(){
+  if(catImg){ map.removeLayer(catImg); catImg = null; }
+  if(!catOn) return;
+  if(map.getZoom() < 15){ aviso('Acércate un poco más para ver las parcelas del Catastro'); return; }
+  const b = map.getBounds(), s = map.getSize(), crs = map.options.crs;
+  const sw = crs.project(b.getSouthWest()), ne = crs.project(b.getNorthEast());
+  const url = 'https://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap'
+    + `&LAYERS=Catastro&STYLES=&SRS=EPSG:3857&BBOX=${sw.x},${sw.y},${ne.x},${ne.y}&WIDTH=${s.x}&HEIGHT=${s.y}&FORMAT=image/png&TRANSPARENT=true`;
+  catImg = L.imageOverlay(url, b, {opacity:.85, attribution:'Catastro © Dirección General del Catastro'}).addTo(map);
+}
+map.on('moveend', () => { clearTimeout(catT); catT = setTimeout(pedirCatastro, 250); });
+
+document.querySelectorAll('#capas button').forEach(b => b.onclick = () => {
+  const k = b.dataset.b;
+  if(k === 'cat'){ catOn = !catOn; b.classList.toggle('on', catOn); pedirCatastro(); return; }
+  document.querySelectorAll('#capas button[data-b="orto"],#capas button[data-b="mapa"]').forEach(x=>x.classList.toggle('on', x===b));
+  if(k==='orto'){ map.removeLayer(base); orto.addTo(map); } else { map.removeLayer(orto); base.addTo(map); }
+  limites.bringToFront();
+});
+document.getElementById('bt-inicio').onclick = () => { map.closePopup(); map.flyTo(INICIO.c, INICIO.z, {duration:1.2}); };
+
+/* ══ la finca, con su plano real ═════════════════════ */
+const fincaCapa = L.layerGroup();
+ALM.vias.forEach(v => v.g.forEach(l => L.polyline(l,{color:'#c8a97e',weight:3,opacity:.9,interactive:false}).addTo(fincaCapa)));
+L.polygon(ALM.alberca,{color:'#2e7d9a',weight:1.5,fillColor:'#2e7d9a',fillOpacity:.45,interactive:false}).addTo(fincaCapa);
+ALM.construcciones.forEach(c => L.polygon(c.g,{color:'#7a6a63',weight:1,fillColor:'#7a6a63',fillOpacity:.7,interactive:false}).addTo(fincaCapa));
+ALM.calles.forEach(c => {
+  const p = L.polygon(c.g,{color:'#ffffff',weight:1.6,fillColor:'#8d63ad',fillOpacity:.28}).addTo(fincaCapa);
+  p.bindTooltip(`Calle ${c.n} · ${c.var}`,{sticky:true});
+  p.on('click', () => abrir('alm'));
+});
+const contorno = L.polygon(ALM.calles.flatMap(c=>c.g),{color:'#8d63ad',weight:0,fill:false,interactive:false});
+function verFinca(){ map.getZoom() >= 14 ? fincaCapa.addTo(map) : map.removeLayer(fincaCapa); }
+map.on('zoomend', verFinca); verFinca();
+
+/* ══ marcadores ══════════════════════════════════════ */
+const ICONOS = {
+ finca:'<path d="M6 14h12M6 10l6-4 6 4M8 14v-3M12 14v-4M16 14v-3" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+ vivienda:'<path d="M6.5 11.5 12 7l5.5 4.5V17h-3.6v-3.4h-3.8V17H6.5z" fill="#fff"/>'
+};
+function icono(p){
+  return L.divIcon({className:'', iconSize:[38,46], iconAnchor:[19,44], popupAnchor:[0,-40],
+    html:`<div class="mk"><svg viewBox="0 0 24 29"><path d="M12 28s9-8.6 9-16A9 9 0 0 0 3 12c0 7.4 9 16 9 16z" fill="${p.hex}" stroke="#fff" stroke-width="1.4"/>
+      <g transform="translate(0,-.5)">${ICONOS[p.tipo]}</g></svg></div>`});
+}
+const marcas = {};
+PROPS.forEach(p => {
+  const m = L.marker(p.pos,{icon:icono(p), riseOnHover:true}).addTo(map);
+  m.bindTooltip(p.nombre,{permanent:true, direction:'right', offset:[14,-26], className:'etq'});
+  m.bindPopup(() => popup(p), {maxWidth:320, minWidth:300, autoPanPadding:[60,60]});
+  m.on('popupopen', () => { document.getElementById('pista').style.opacity = 0; });
+  marcas[p.id] = m;
+});
+function etiquetas(){ const on = map.getZoom() >= 13;
+  Object.values(marcas).forEach(m => on ? m.openTooltip() : m.closeTooltip()); }
+map.on('zoomend', etiquetas); etiquetas();
+
+function popup(p){
+  const d = document.createElement('div');
+  d.className = 'pp';
+  d.innerHTML = `<span class="eyebrow">${p.tipo === 'finca' ? 'Finca rústica' : 'Vivienda'}</span>
+    <h3>${p.nombre}</h3>
+    <div class="tit">Titular: <b>${p.titular}</b><br>${p.donde}<br>${p.detalle}</div>
+    <span class="eyebrow">Documentación</span>
+    <div style="margin-top:6px">${p.docs.map(x => `<button class="doc" data-k="${x.k}">
+       <span class="di">${x.ic}</span><span><b>${x.t}</b><small>${x.s}</small></span><span class="flecha">›</span></button>`).join('')}</div>
+    <div class="ref">Datos y documentos de ejemplo · nada de esto es real</div>`;
+  d.querySelectorAll('.doc').forEach(b => b.onclick = () => verDoc(p, p.docs.find(x => x.k === b.dataset.k)));
+  return d;
+}
+function abrir(id){
+  const p = PROPS.find(x => x.id === id);
+  const z = p.tipo === 'finca' ? 16 : 18;
+  map.flyTo(p.pos, z, {duration:1.6});
+  map.once('moveend', () => marcas[id].openPopup());
+}
+
+/* ══ panel y buscador ════════════════════════════════ */
+let filtro = 'Todos';
+function pintarPanel(){
+  const grupos = ['Todos', ...new Set(PROPS.map(p => p.grupo))];
+  document.getElementById('chips').innerHTML = grupos.map(g => `<button class="chip ${g===filtro?'on':''}" data-g="${g}">${g}</button>`).join('');
+  document.querySelectorAll('#chips .chip').forEach(c => c.onclick = () => { filtro = c.dataset.g; pintarPanel(); });
+  const vis = PROPS.filter(p => filtro === 'Todos' || p.grupo === filtro);
+  document.getElementById('lista').innerHTML = vis.map(p => `<button class="prop" data-id="${p.id}">
+     <span class="ic" style="background:${p.hex}"><svg viewBox="0 0 24 24" width="20" height="20">${ICONOS[p.tipo]}</svg></span>
+     <span><b>${p.nombre}</b><small>${p.titular}</small><small>${p.docs.length} documentos</small></span></button>`).join('');
+  document.querySelectorAll('#lista .prop').forEach(b => b.onclick = () => abrir(b.dataset.id));
+  PROPS.forEach(p => { const v = filtro === 'Todos' || p.grupo === filtro;
+    v ? marcas[p.id].addTo(map) : map.removeLayer(marcas[p.id]); });
+  etiquetas();
+}
+pintarPanel();
+
+const q = document.getElementById('q'), sug = document.getElementById('sug');
+q.oninput = () => {
+  const t = q.value.trim().toLowerCase();
+  if(!t){ sug.hidden = true; return; }
+  const res = [];
+  PROPS.forEach(p => {
+    if((p.nombre+' '+p.titular+' '+p.donde).toLowerCase().includes(t)) res.push({p, tx:p.nombre, s:p.titular});
+    p.docs.forEach(x => { if((x.t+' '+x.s).toLowerCase().includes(t)) res.push({p, doc:x, tx:`${x.t} · ${p.nombre}`, s:x.s}); });
+  });
+  sug.innerHTML = res.slice(0,7).map((r,i) => `<button data-i="${i}">${r.tx}<small>${r.s}</small></button>`).join('')
+    || '<button disabled>Sin resultados</button>';
+  sug.hidden = false;
+  sug.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => {
+    const r = res[+b.dataset.i]; sug.hidden = true; q.value = '';
+    r.doc ? verDoc(r.p, r.doc) : abrir(r.p.id);
+  });
+};
+q.onblur = () => setTimeout(() => sug.hidden = true, 200);
+
+function aviso(t){ const p = document.getElementById('pista'); p.textContent = t; p.style.opacity = 1;
+  clearTimeout(aviso.t); aviso.t = setTimeout(() => p.style.opacity = 0, 3200); }
+</script>
+
+<script>
+/* ══ los documentos: todos inventados y marcados ═════ */
+const MARCA = '<div class="agua-marca"><span>EJEMPLO</span></div>';
+const AVISO = '<div class="aviso-ej"><b>Documento de ejemplo.</b> Entidad, titular, cifras y referencias son inventados para la simulación. No es un recibo real.</div>';
+
+function reciboAgua(p){
+  const viv = p.tipo === 'vivienda';
+  const m3 = p.id === 'va' ? 47 : (p.id === 'vb' ? 38 : 18400);
+  let filas, hist, sub = [];
+  if(viv){
+    const b1 = Math.min(m3,21), b2 = Math.max(0,Math.min(m3,45)-21), b3 = Math.max(0,m3-45);
+    const abast = [['Cuota de servicio (3 meses)','',9.45],
+      ['Consumo bloque 1 · 0–21 m³', `${b1} m³ × 0,5200`, b1*0.52],
+      ['Consumo bloque 2 · 22–45 m³', `${b2} m³ × 0,8900`, b2*0.89],
+      ['Consumo bloque 3 · más de 45 m³', `${b3} m³ × 1,4600`, b3*1.46]];
+    const alc = [['Cuota de servicio','',3.90],['Vertido', `${m3} m³ × 0,2800`, m3*0.28]];
+    const dep = [['Depuración', `${m3} m³ × 0,4100`, m3*0.41]];
+    const can = [['Canon de infraestructura (ejemplo)', `${m3} m³ × 0,2500`, m3*0.25]];
+    filas = [['Abastecimiento',abast],['Alcantarillado',alc],['Depuración',dep],['Otros conceptos',can]];
+    hist = [41,36,44,58,39,35,46,m3];
+  } else {
+    filas = [['Cuota de comunidad',[['Cuota por superficie regable','39,50 ha × 62,0000',39.5*62]]],
+      ['Agua de riego',[['Volumen servido', `${nf(m3)} m³ × 0,0350`, m3*0.035]]],
+      ['Mantenimiento',[['Derrama de la red (3.er trimestre)','',212.40]]]];
+    hist = [9800,4200,11900,21300,10400,5100,12600,m3];
+  }
+  const base = filas.reduce((a,[,r]) => a + r.reduce((s,x)=>s+x[2],0), 0);
+  const iva = base * 0.10, total = base + iva;
+  const max = Math.max(...hist);
+  const tri = ['4T 24','1T 25','2T 25','3T 25','4T 25','1T 26','2T 26','3T 26'];
+  const entidad = viv ? ['Aguas de Ejemplo','Servicio municipal de abastecimiento · entidad ficticia']
+                      : ['Regantes de Ejemplo','Comunidad de regantes · entidad ficticia'];
+  return `<div class="hoja">${MARCA}${AVISO}
+   <div class="r-cab"><div class="r-logo"><span class="gota"></span><span><b>${entidad[0]}</b><small>${entidad[1]}</small></span></div>
+    <div class="r-fact">FACTURA Nº<b class="num">EJ-2026-3-${p.id === 'va' ? '004821' : (p.id === 'vb' ? '004822' : '000117')}</b>Fecha de emisión: 03/10/2026<br>Periodo: 01/07/2026 – 30/09/2026</div></div>
+   <div class="r-datos">
+    <dl class="r-caja"><dt>Titular del contrato</dt><dd>${p.titular}</dd><dt>Dirección de suministro</dt><dd>${p.nombre}<br><span style="font-weight:400">${p.donde.replace(' · ubicación ilustrativa','')}</span></dd></dl>
+    <dl class="r-caja"><dt>Nº de contrato</dt><dd class="num">PRUEBA-${p.id.toUpperCase()}-00123</dd>
+     <dt>${viv ? 'Contador' : 'Toma'} · lecturas</dt><dd class="num">${viv
+       ? `Nº EJ-0000${p.id === 'va' ? '71' : '72'} · ${nf(1234)} → ${nf(1234+m3)} m³`
+       : `Hidrante H-07 · ${nf(412300)} → ${nf(412300+m3)} m³`}</dd>
+     <dt>Consumo del periodo</dt><dd class="num" style="font-size:16px;color:#1f5f78">${nf(m3)} m³</dd></dl>
+   </div>
+   <h4>Detalle de la factura</h4>
+   <table class="r-tabla"><thead><tr><th>Concepto</th><th>Cálculo</th><th class="d">Importe</th></tr></thead><tbody>
+    ${filas.map(([g,r]) => `<tr class="sub"><td colspan="2">${g}</td><td class="d">${eur(r.reduce((s,x)=>s+x[2],0))}</td></tr>`
+      + r.map(x => `<tr><td style="padding-left:16px">${x[0]}</td><td style="color:#666">${x[1]}</td><td class="d">${eur(x[2])}</td></tr>`).join('')).join('')}
+    <tr><td colspan="2" style="text-align:right">Base imponible</td><td class="d">${eur(base)}</td></tr>
+    <tr><td colspan="2" style="text-align:right">IVA 10 %</td><td class="d">${eur(iva)}</td></tr>
+   </tbody></table>
+   <div class="r-total"><span>TOTAL A PAGAR<br><small style="opacity:.8">Domiciliado · cargo el 15/10/2026</small></span><b>${eur(total)}</b></div>
+   <h4>Evolución del consumo (m³)</h4>
+   <div class="r-graf">${hist.map((h,i) => `<div class="${i===hist.length-1?'act':''}" style="height:${h/max*100}%"><span>${nf(h)}</span></div>`).join('')}</div>
+   <div class="r-graf-et">${tri.map(t => `<span>${t}</span>`).join('')}</div>
+   <div class="r-pie">Documento generado para la simulación del plano de propiedades. En la aplicación real aquí se vería el PDF escaneado o descargado del recibo, guardado con su huella (sha256) y su fecha de entrada.</div>
+  </div>`;
+}
+
+function escritura(p){
+  const anio = p.docs[0].s.match(/\d{4}/)[0];
+  return `<div class="hoja esc">${MARCA}${AVISO}
+   <div class="cab">NÚMERO <span class="num">PRUEBA-${anio}/1.284</span><b>ESCRITURA DE ${p.id === 'va' ? 'ADJUDICACIÓN DE HERENCIA' : 'COMPRAVENTA'}</b>
+     otorgada a favor de <b style="font-size:15px;letter-spacing:0">${p.titular}</b></div>
+   <p>En Moguer, a doce de marzo de ${anio}. Ante mí, Notario de Ejemplo, del Ilustre Colegio de Andalucía, con residencia en esta villa,
+   <b>COMPARECEN</b> las partes que se dirán, a quienes identifico por sus documentos, y tienen a mi juicio capacidad legal para otorgar la presente escritura.</p>
+   <p><b>EXPONEN.</b> I.— Que es objeto de la presente la finca siguiente: <i>${p.tipo === 'finca'
+     ? 'rústica, en el paraje de La Canorra, término de Moguer, con una superficie de treinta y nueve hectáreas y cincuenta áreas, dedicada a cultivo bajo plástico, con alberca y construcciones auxiliares'
+     : 'urbana, vivienda situada en el casco urbano de Moguer, con una superficie construida según el título de ' + p.detalle.match(/\d+ m²/)[0]}</i>.
+   Inscrita en el Registro de la Propiedad de Moguer al tomo de ejemplo, libro de ejemplo, folio de ejemplo, finca registral número de ejemplo.</p>
+   <p>II.— Referencia catastral: <span class="num">PRUEBA-0000000000000000</span>. Cargas: libre de cargas y gravámenes, según manifiestan.</p>
+   <p><b>OTORGAN.</b> Primero.— ... (el resto de la escritura iría aquí, página a página, tal como se escaneó).</p>
+   <div class="sello">NOTARÍA<br>DE EJEMPLO<br>— MOGUER —</div>
+  </div>`;
+}
+
+function ibi(p){
+  const rust = p.tipo === 'finca';
+  const vc = rust ? 96420.18 : (p.id === 'va' ? 58210.40 : 44175.90);
+  const tipo = rust ? 0.0072 : 0.0063, cuota = vc * tipo;
+  return `<div class="hoja">${MARCA}${AVISO}
+   <div class="r-cab"><div class="r-logo"><span class="gota" style="border-radius:8px;transform:none;background:linear-gradient(135deg,#8a6d3b,#5b4522)"></span>
+     <span><b style="color:#5b4522">Recaudación de Ejemplo</b><small>Impuesto sobre Bienes Inmuebles · organismo ficticio</small></span></div>
+    <div class="r-fact">RECIBO<b class="num">IBI-${rust ? 'R' : 'U'}-2026-EJ</b>Ejercicio 2026 · periodo voluntario<br>del 01/09/2026 al 20/11/2026</div></div>
+   <div class="r-datos">
+    <dl class="r-caja"><dt>Sujeto pasivo</dt><dd>${p.titular}</dd><dt>Objeto tributario</dt><dd>${p.nombre}</dd></dl>
+    <dl class="r-caja"><dt>Referencia catastral</dt><dd class="num">PRUEBA-0000000000000000</dd><dt>Clase</dt><dd>${rust ? 'Rústica' : 'Urbana · uso residencial'}</dd></dl>
+   </div>
+   <h4>Liquidación</h4>
+   <table class="r-tabla"><tbody>
+    <tr><td>Valor catastral</td><td class="d">${eur(vc)}</td></tr>
+    <tr><td>Base liquidable</td><td class="d">${eur(vc)}</td></tr>
+    <tr><td>Tipo de gravamen</td><td class="d">${nf(tipo*100,2)} %</td></tr>
+   </tbody></table>
+   <div class="r-total" style="background:#5b4522"><span>CUOTA ÍNTEGRA<br><small style="opacity:.8">Domiciliado · cargo el 05/10/2026</small></span><b>${eur(cuota)}</b></div>
+   <div class="r-pie">Documento generado para la simulación del plano de propiedades.</div></div>`;
+}
+
+function luz(p){
+  const fin = p.tipo === 'finca';
+  const kw = fin ? 34.5 : 4.6, kwh = fin ? 9120 : (p.id === 'va' ? 312 : 228);
+  const pot = kw*30*0.0998, ene = kwh*(fin ? 0.128 : 0.142), ie = (pot+ene)*0.0511, alq = fin ? 4.20 : 0.81;
+  const base = pot+ene+ie+alq, iva = base*0.21;
+  return `<div class="hoja">${MARCA}${AVISO}
+   <div class="r-cab"><div class="r-logo"><span class="gota" style="border-radius:50%;transform:none;background:linear-gradient(135deg,#f2b134,#d0780b)"></span>
+     <span><b style="color:#b0620a">Energía de Ejemplo</b><small>Comercializadora · entidad ficticia</small></span></div>
+    <div class="r-fact">FACTURA<b class="num">EL-2026-09-EJ</b>Periodo: 01/09/2026 – 30/09/2026 (30 días)</div></div>
+   <div class="r-datos">
+    <dl class="r-caja"><dt>Titular</dt><dd>${p.titular}</dd><dt>Suministro</dt><dd>${fin ? 'Cabezal de riego · Finca Almohafa' : p.nombre}</dd></dl>
+    <dl class="r-caja"><dt>CUPS</dt><dd class="num">ES0000PRUEBA000000${fin ? 'FA' : 'VV'}</dd><dt>Potencia contratada</dt><dd>${nf(kw,1)} kW</dd><dt>Consumo</dt><dd>${nf(kwh)} kWh</dd></dl>
+   </div>
+   <h4>Detalle</h4>
+   <table class="r-tabla"><tbody>
+    <tr><td>Término de potencia</td><td style="color:#666">${nf(kw,1)} kW × 30 días × 0,0998</td><td class="d">${eur(pot)}</td></tr>
+    <tr><td>Término de energía</td><td style="color:#666">${nf(kwh)} kWh × ${fin ? '0,1280' : '0,1420'}</td><td class="d">${eur(ene)}</td></tr>
+    <tr><td>Impuesto eléctrico</td><td style="color:#666">5,11 %</td><td class="d">${eur(ie)}</td></tr>
+    <tr><td>Alquiler del contador</td><td></td><td class="d">${eur(alq)}</td></tr>
+    <tr><td colspan="2" style="text-align:right">IVA 21 %</td><td class="d">${eur(iva)}</td></tr>
+   </tbody></table>
+   <div class="r-total" style="background:#b0620a"><span>TOTAL<br><small style="opacity:.8">Domiciliado · cargo el 12/10/2026</small></span><b>${eur(base+iva)}</b></div>
+   <div class="r-pie">Documento generado para la simulación del plano de propiedades.</div></div>`;
+}
+
+const GEN = {agua:reciboAgua, esc:escritura, ibi:ibi, luz:luz};
+const velo = document.getElementById('velo');
+function verDoc(p, d){
+  document.getElementById('v-ic').textContent = d.ic;
+  document.getElementById('v-tit').textContent = `${d.t} · ${p.nombre}`;
+  document.getElementById('v-sub').textContent = `${d.s} · titular: ${p.titular}`;
+  document.getElementById('v-hoja').innerHTML = GEN[d.k](p);
+  document.getElementById('v-reg').innerHTML = `🔒 <b>Consulta registrada:</b> el dueño abrió «${d.t}» de ${p.nombre} el ${ahora()}. Sólo lo ven él y las personas que designe.`;
+  velo.classList.add('on'); velo.scrollTop = 0;
+}
+document.getElementById('v-cerrar').onclick = () => velo.classList.remove('on');
+velo.onclick = e => { if(e.target === velo) velo.classList.remove('on'); };
+document.addEventListener('keydown', e => { if(e.key === 'Escape') velo.classList.remove('on'); });
+</script>
+</body></html>
