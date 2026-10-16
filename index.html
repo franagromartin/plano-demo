@@ -46,7 +46,11 @@ main{position:relative}
 .prop b{display:block;font-size:14px}
 .prop small{display:block;color:var(--sub);font-size:12px;line-height:1.35}
 .panel .pie{font-size:11.5px;color:var(--tenue);margin-top:6px;line-height:1.4}
-@media(max-width:760px){.panel{width:auto;right:14px;max-height:38%}}
+.panel{display:none}.panel.on{display:block}
+.panel .cerrar{position:absolute;right:10px;top:9px;border:0;background:none;font-size:18px;color:var(--tenue);cursor:pointer;padding:2px 6px;border-radius:6px}
+.panel .cerrar:hover{background:var(--sup2);color:var(--tinta)}
+.btn-props{position:absolute;left:14px;top:14px;z-index:1000}
+.btn-props.oculto{display:none}
 /* controles de capa */
 .capas{position:absolute;right:14px;top:14px;z-index:1000;background:var(--sup);border:1px solid var(--linea);border-radius:12px;box-shadow:var(--sombra);padding:6px;display:flex;gap:4px}
 .capas button{border:0;background:none;padding:6px 11px;border-radius:8px;font:600 12.5px 'Archivo',sans-serif;color:var(--sub);cursor:pointer}
@@ -66,7 +70,7 @@ main{position:relative}
 .etq:before{display:none}
 /* globo de la propiedad */
 .leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--sombra);padding:0}
-.leaflet-popup-content{margin:0;width:300px!important}
+.leaflet-popup-content{margin:0;width:min(300px,calc(100vw - 60px))!important}
 .pp{padding:14px 14px 10px}
 .pp h3{font:700 16px 'Archivo',sans-serif;margin:2px 0 2px}
 .pp .tit{font-size:12.5px;color:var(--sub);margin-bottom:10px}
@@ -90,7 +94,7 @@ main{position:relative}
 .registro{padding:9px 14px;font-size:12px;color:var(--sub);background:var(--sup);border-top:1px solid var(--linea)}
 .registro b{color:var(--tinta)}
 /* el papel */
-.hoja{position:relative;background:#fff;color:#222;max-width:760px;margin:0 auto;padding:30px 34px 34px;box-shadow:0 2px 10px rgba(0,0,0,.12);font-family:Arial,Helvetica,sans-serif;font-size:12.5px;min-width:560px}
+.hoja{position:relative;background:#fff;color:#222;max-width:760px;margin:0 auto;padding:30px 34px 34px;box-shadow:0 2px 10px rgba(0,0,0,.12);font-family:Arial,Helvetica,sans-serif;font-size:12.5px}
 .hoja .agua-marca{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;overflow:hidden}
 .hoja .agua-marca span{transform:rotate(-28deg);font:700 92px Arial,sans-serif;color:rgba(207,14,54,.09);letter-spacing:.08em}
 .hoja table{border-collapse:collapse;width:100%}
@@ -125,6 +129,45 @@ main{position:relative}
 .esc .cab{text-align:center;margin-bottom:18px}
 .esc .cab b{display:block;font-size:20px;letter-spacing:.06em}
 .esc .sello{width:86px;height:86px;border:3px double #7a2a2a;border-radius:50%;display:grid;place-items:center;color:#7a2a2a;font:700 10px Georgia,serif;text-align:center;margin:18px 0 0 auto;transform:rotate(-12deg)}
+.pista .corta{display:none}
+@media(max-width:760px){
+ header{gap:8px;padding:0 10px;height:52px}
+ #app{grid-template-rows:52px 1fr}
+ .marca .s{width:30px;height:30px}
+ .marca b{font-size:14px}
+ .maqueta,.quien{display:none}
+ .busca input{font-size:16px;padding:7px 10px 7px 30px}
+ .capas{right:10px;top:10px;padding:4px}
+ .capas button{padding:6px 8px;font-size:12px}
+ .inicio{right:10px;top:auto;bottom:104px}
+ .inicio .bt{width:34px;height:34px;padding:0;font-size:0}
+ .inicio .bt:before{content:'⌂';font-size:18px;line-height:34px}
+ .visor-barra .x{font-size:0;padding:6px 10px}
+ .visor-barra .x:after{content:'✕';font-size:16px}
+ .btn-props{left:10px;top:10px}
+ .bt{padding:7px 10px;font-size:12px}
+ .panel{left:10px;right:10px;top:10px;width:auto;max-height:70%}
+ .pista{bottom:16px;font-size:12.5px;padding:7px 12px}
+ .pista .larga{display:none}.pista .corta{display:inline}
+ .leaflet-control-attribution{font-size:9px;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .velo{padding:0}
+ .visor{width:100%;min-height:100%;border-radius:0}
+ .visor-barra{position:sticky;top:0;z-index:2;padding:9px 10px}
+ .visor-barra b{font-size:13px}
+ .hoja-caja{padding:10px}
+ .hoja{padding:16px 14px 20px;font-size:12px}
+ .hoja .agua-marca span{font-size:52px}
+ .r-cab{flex-direction:column;gap:10px}
+ .r-fact{text-align:left}
+ .r-datos{grid-template-columns:1fr;gap:8px}
+ .r-tabla .calc{display:none}
+ .r-total b{font-size:19px}
+ .r-graf div span{font-size:8.5px}
+ .r-graf-et span{font-size:8.5px}
+ .esc{font-size:13px;line-height:1.6;text-align:left}
+ .esc .cab b{font-size:16px}
+ .registro{font-size:11.5px}
+}
 </style></head>
 <body><div id="app">
 <header>
@@ -135,7 +178,9 @@ main{position:relative}
 </header>
 <main>
  <div id="mapa"></div>
+ <div class="btn-props" id="btn-props"><button class="bt">☰ Propiedades <span class="num" style="color:var(--tenue)">3</span></button></div>
  <aside class="panel" id="panel">
+  <button class="cerrar" id="panel-x" aria-label="Cerrar">✕</button>
   <span class="eyebrow">Término municipal de Moguer</span>
   <h2>Propiedades</h2>
   <div class="chips" id="chips"></div>
@@ -146,7 +191,7 @@ main{position:relative}
   <button data-b="orto" class="on">Ortofoto</button><button data-b="mapa">Mapa</button><button data-b="cat">Catastro</button>
  </div>
  <div class="inicio"><button class="bt" id="bt-inicio">⌂ Todo Moguer</button></div>
- <div class="pista" id="pista">Acerca el plano a una propiedad y pincha en ella para ver su documentación</div>
+ <div class="pista" id="pista"><span class="larga">Acerca el plano a una propiedad y pincha en ella para ver su documentación</span><span class="corta">Pincha en una propiedad para ver sus documentos</span></div>
  <div class="sinred" id="sinred"><div><b>No se ha podido cargar la ortofoto.</b><br>El plano necesita conexión a internet para pedir las imágenes al IGN. Las propiedades y los documentos funcionan igual.</div></div>
 </main>
 </div>
@@ -266,11 +311,11 @@ const marcas = {};
 PROPS.forEach(p => {
   const m = L.marker(p.pos,{icon:icono(p), riseOnHover:true}).addTo(map);
   m.bindTooltip(p.nombre,{permanent:true, direction:'right', offset:[14,-26], className:'etq'});
-  m.bindPopup(() => popup(p), {maxWidth:320, minWidth:300, autoPanPadding:[60,60]});
+  m.bindPopup(() => popup(p), {maxWidth:320, minWidth:Math.min(300, innerWidth-60), autoPanPaddingTopLeft:[20,70], autoPanPaddingBottomRight:[20,30]});
   m.on('popupopen', () => { document.getElementById('pista').style.opacity = 0; });
   marcas[p.id] = m;
 });
-function etiquetas(){ const on = map.getZoom() >= 13;
+function etiquetas(){ const on = map.getZoom() >= (innerWidth < 760 ? 16 : 13);
   Object.values(marcas).forEach(m => on ? m.openTooltip() : m.closeTooltip()); }
 map.on('zoomend', etiquetas); etiquetas();
 
@@ -310,6 +355,11 @@ function pintarPanel(){
   etiquetas();
 }
 pintarPanel();
+const panel = document.getElementById('panel'), bProps = document.getElementById('btn-props');
+function panelVer(on){ panel.classList.toggle('on', on); bProps.classList.toggle('oculto', on); }
+bProps.onclick = () => panelVer(true);
+document.getElementById('panel-x').onclick = () => panelVer(false);
+document.getElementById('lista').addEventListener('click', e => { if(e.target.closest('.prop')) panelVer(false); });
 
 const q = document.getElementById('q'), sug = document.getElementById('sug');
 q.oninput = () => {
@@ -378,9 +428,9 @@ function reciboAgua(p){
      <dt>Consumo del periodo</dt><dd class="num" style="font-size:16px;color:#1f5f78">${nf(m3)} m³</dd></dl>
    </div>
    <h4>Detalle de la factura</h4>
-   <table class="r-tabla"><thead><tr><th>Concepto</th><th>Cálculo</th><th class="d">Importe</th></tr></thead><tbody>
+   <table class="r-tabla"><thead><tr><th>Concepto</th><th class="calc">Cálculo</th><th class="d">Importe</th></tr></thead><tbody>
     ${filas.map(([g,r]) => `<tr class="sub"><td colspan="2">${g}</td><td class="d">${eur(r.reduce((s,x)=>s+x[2],0))}</td></tr>`
-      + r.map(x => `<tr><td style="padding-left:16px">${x[0]}</td><td style="color:#666">${x[1]}</td><td class="d">${eur(x[2])}</td></tr>`).join('')).join('')}
+      + r.map(x => `<tr><td style="padding-left:16px">${x[0]}</td><td class="calc" style="color:#666">${x[1]}</td><td class="d">${eur(x[2])}</td></tr>`).join('')).join('')}
     <tr><td colspan="2" style="text-align:right">Base imponible</td><td class="d">${eur(base)}</td></tr>
     <tr><td colspan="2" style="text-align:right">IVA 10 %</td><td class="d">${eur(iva)}</td></tr>
    </tbody></table>
@@ -446,10 +496,10 @@ function luz(p){
    </div>
    <h4>Detalle</h4>
    <table class="r-tabla"><tbody>
-    <tr><td>Término de potencia</td><td style="color:#666">${nf(kw,1)} kW × 30 días × 0,0998</td><td class="d">${eur(pot)}</td></tr>
-    <tr><td>Término de energía</td><td style="color:#666">${nf(kwh)} kWh × ${fin ? '0,1280' : '0,1420'}</td><td class="d">${eur(ene)}</td></tr>
-    <tr><td>Impuesto eléctrico</td><td style="color:#666">5,11 %</td><td class="d">${eur(ie)}</td></tr>
-    <tr><td>Alquiler del contador</td><td></td><td class="d">${eur(alq)}</td></tr>
+    <tr><td>Término de potencia</td><td class="calc" style="color:#666">${nf(kw,1)} kW × 30 días × 0,0998</td><td class="d">${eur(pot)}</td></tr>
+    <tr><td>Término de energía</td><td class="calc" style="color:#666">${nf(kwh)} kWh × ${fin ? '0,1280' : '0,1420'}</td><td class="d">${eur(ene)}</td></tr>
+    <tr><td>Impuesto eléctrico</td><td class="calc" style="color:#666">5,11 %</td><td class="d">${eur(ie)}</td></tr>
+    <tr><td>Alquiler del contador</td><td class="calc"></td><td class="d">${eur(alq)}</td></tr>
     <tr><td colspan="2" style="text-align:right">IVA 21 %</td><td class="d">${eur(iva)}</td></tr>
    </tbody></table>
    <div class="r-total" style="background:#b0620a"><span>TOTAL<br><small style="opacity:.8">Domiciliado · cargo el 12/10/2026</small></span><b>${eur(base+iva)}</b></div>
